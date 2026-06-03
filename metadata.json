@@ -1,0 +1,8 @@
+{
+  "name": "BIM Metric Portal & BOQs Tracker",
+  "description": "A cloud-connected construction portal that visualizes interactive 3D/2D BIM model coordinations, flags spatial clashes, and computes automated quantity takeoff estimates using Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

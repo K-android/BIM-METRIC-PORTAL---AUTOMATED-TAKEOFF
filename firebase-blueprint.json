@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A construction project containing BIM models, BOQ details, and coordination status.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the project"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the construction project"
+        },
+        "location": {
+          "type": "string",
+          "description": "Physical location / address of the site"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planning", "active", "completed", "archived"],
+          "description": "Current stage of the project"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the owner who created this project"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this project was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when this project was last updated"
+        }
+      },
+      "required": ["id", "name", "location", "status", "ownerId", "createdAt", "updatedAt"]
+    },
+    "Clash": {
+      "title": "Clash",
+      "description": "A spatial coordination conflict identified between BIM disciplines in the model.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the clash"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project ID reference"
+        },
+        "title": {
+          "type": "string",
+          "description": "Brief description of the clash (e.g., Mechanical Duct vs Steel Beam)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "in_review", "resolved", "ignored"],
+          "description": "Coordination status of this spatial clash"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "Severity of the spatial overlap"
+        },
+        "discipline1": {
+          "type": "string",
+          "description": "First BIM discipline involved (e.g., Mechanical)"
+        },
+        "discipline2": {
+          "type": "string",
+          "description": "Second BIM discipline involved (e.g., Structural)"
+        },
+        "coordinateX": {
+          "type": "number",
+          "description": "X coordinate in standard meters"
+        },
+        "coordinateY": {
+          "type": "number",
+          "description": "Y coordinate in standard meters"
+        },
+        "coordinateZ": {
+          "type": "number",
+          "description": "Z coordinate in standard meters"
+        },
+        "assignedTo": {
+          "type": "string",
+          "description": "User or discipline head assigned to resolve this"
+        },
+        "aiRecommendation": {
+          "type": "string",
+          "description": "AI Suggested resolution or mitigation path"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "projectId", "title", "status", "severity", "discipline1", "discipline2", "coordinateX", "coordinateY", "coordinateZ", "assignedTo", "createdAt", "updatedAt"]
+    },
+    "BOQItem": {
+      "title": "BOQItem",
+      "description": "An automated quantity takeoff or Bill of Quantities item from the 3D model properties.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the takeoff item"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project ID reference"
+        },
+        "category": {
+          "type": "string",
+          "description": "Material or work category (e.g., Structural Concrete, Rebar, Drywall, Glazing)"
+        },
+        "elementType": {
+          "type": "string",
+          "description": "Exact element type in BIM (e.g., Column 400x400x3100)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity as measured from model geometry"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Measurement unit (e.g., m3, m2, m, kg, pcs)"
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Estimated unit cost in USD"
+        },
+        "totalPrice": {
+          "type": "number",
+          "description": "Derived total price (quantity * unitPrice) in USD"
+        },
+        "sourceLocation": {
+          "type": "string",
+          "description": "Spatial location inside model (e.g., Level 2, Grid C-4)"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional remarks or AI optimization suggestions"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "projectId", "category", "elementType", "quantity", "unit", "unitPrice", "totalPrice", "createdAt", "updatedAt"]
+    },
+    "Annotation": {
+      "title": "Annotation",
+      "description": "A user-pinned collaborative note or annotation flagged visually on the 2D/3D BIM Viewer.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the annotation"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project ID reference"
+        },
+        "text": {
+          "type": "string",
+          "description": "Annotation commentary or flag explanation"
+        },
+        "author": {
+          "type": "string",
+          "description": "Name or handle of compiling engineer"
+        },
+        "authorColor": {
+          "type": "string",
+          "description": "A hex color code associated with the user"
+        },
+        "coordinateX": {
+          "type": "number",
+          "description": "Visual projection X location"
+        },
+        "coordinateY": {
+          "type": "number",
+          "description": "Visual projection Y location"
+        },
+        "coordinateZ": {
+          "type": "number",
+          "description": "Visual projection Z elevation"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "projectId", "text", "author", "authorColor", "coordinateX", "coordinateY", "coordinateZ", "createdAt"]
+    },
+    "UserPresence": {
+      "title": "UserPresence",
+      "description": "Real-time user mouse cursor and view-focus tracking presence flag.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "User UID tracking reference"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project ID reference"
+        },
+        "name": {
+          "type": "string",
+          "description": "Engineer or user display nickname"
+        },
+        "color": {
+          "type": "string",
+          "description": "User specific styling cursor pointer hex"
+        },
+        "cursorX": {
+          "type": "number",
+          "description": "Model space coordinate X"
+        },
+        "cursorY": {
+          "type": "number",
+          "description": "Model space coordinate Y"
+        },
+        "viewMode": {
+          "type": "string",
+          "description": "Viewer mode projection selection: '2d' or 'iso'"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "projectId", "name", "color", "cursorX", "cursorY", "viewMode", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "projects": {
+      "schema": "Project",
+      "description": "Collection of construction projects managed by site supervisors and engineers."
+    },
+    "projects/{projectId}/clashes": {
+      "schema": "Clash",
+      "description": "Subcollection of BIM clashes under a specific project, tracked in real-time."
+    },
+    "projects/{projectId}/boqItems": {
+      "schema": "BOQItem",
+      "description": "Subcollection of Bill of Quantities taking off items calculated or entered from model geometry."
+    },
+    "projects/{projectId}/annotations": {
+      "schema": "Annotation",
+      "description": "Subcollection under project storing visual spatial notes for coordinated systems."
+    },
+    "projects/{projectId}/presence": {
+      "schema": "UserPresence",
+      "description": "Subcollection with ephemeral records syncing user cursors and BIM view states."
+    }
+  }
+}

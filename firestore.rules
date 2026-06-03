@@ -1,0 +1,257 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Globally defined helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+    
+    // Helper to validate project schema
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'name', 'location', 'status', 'ownerId', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && data.location is string && data.location.size() <= 200
+        && data.status in ['planning', 'active', 'completed', 'archived']
+        && data.ownerId == request.auth.uid
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+    
+    // Helper to validate clash schema
+    function isValidClash(data) {
+      return data.keys().hasAll(['id', 'projectId', 'title', 'status', 'severity', 'discipline1', 'discipline2', 'coordinateX', 'coordinateY', 'coordinateZ', 'assignedTo', 'aiRecommendation', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 14
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.title is string && data.title.size() <= 300
+        && data.status in ['open', 'in_review', 'resolved', 'ignored']
+        && data.severity in ['low', 'medium', 'high', 'critical']
+        && data.discipline1 is string && data.discipline1.size() <= 100
+        && data.discipline2 is string && data.discipline2.size() <= 100
+        && data.coordinateX is number
+        && data.coordinateY is number
+        && data.coordinateZ is number
+        && data.assignedTo is string && data.assignedTo.size() <= 100
+        && data.aiRecommendation is string && data.aiRecommendation.size() <= 2000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+    
+    // Helper to validate BOQ item schema
+    function isValidBOQItem(data) {
+      return data.keys().hasAll(['id', 'projectId', 'category', 'elementType', 'quantity', 'unit', 'unitPrice', 'totalPrice', 'sourceLocation', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().size() == 12
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.category is string && data.category.size() <= 150
+        && data.elementType is string && data.elementType.size() <= 150
+        && data.quantity is number && data.quantity >= 0
+        && data.unit is string && data.unit.size() <= 50
+        && data.unitPrice is number && data.unitPrice >= 0
+        && data.totalPrice is number && data.totalPrice >= 0
+        && data.sourceLocation is string && data.sourceLocation.size() <= 200
+        && data.notes is string && data.notes.size() <= 1000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+    
+    // Helper to validate annotation schema
+    function isValidAnnotation(data) {
+      return data.keys().hasAll(['id', 'projectId', 'text', 'author', 'authorColor', 'coordinateX', 'coordinateY', 'coordinateZ', 'createdAt'])
+        && data.keys().size() == 9
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.text is string && data.text.size() <= 1000
+        && data.author is string && data.author.size() <= 100
+        && data.authorColor is string && data.authorColor.size() <= 10
+        && data.coordinateX is number
+        && data.coordinateY is number
+        && data.coordinateZ is number
+        && data.createdAt is timestamp;
+    }
+    
+    // Helper to validate user presence schema
+    function isValidUserPresence(data) {
+      return data.keys().hasAll(['id', 'projectId', 'name', 'color', 'cursorX', 'cursorY', 'viewMode', 'updatedAt'])
+        && data.keys().size() == 8
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.name is string && data.name.size() <= 100
+        && data.color is string && data.color.size() <= 10
+        && data.cursorX is number
+        && data.cursorY is number
+        && data.viewMode in ['2d', 'iso']
+        && data.updatedAt is timestamp;
+    }
+
+    // Helper to validate BCF Issue schema
+    function isValidBCFIssue(data) {
+      return data.keys().hasAll(['id', 'projectId', 'guid', 'title', 'description', 'status', 'priority', 'creationDate', 'creationAuthor', 'assignedTo', 'coordinateX', 'coordinateY', 'coordinateZ', 'discipline1', 'discipline2', 'comment', 'synced', 'createdAt'])
+        && data.keys().size() >= 18 && data.keys().size() <= 20
+        && data.id is string && data.id.size() <= 128
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.guid is string && data.guid.size() <= 128
+        && data.title is string && data.title.size() <= 300
+        && data.description is string && data.description.size() <= 2000
+        && data.status is string && data.status.size() <= 100
+        && data.priority is string && data.priority.size() <= 100
+        && data.creationDate is string && data.creationDate.size() <= 100
+        && data.creationAuthor is string && data.creationAuthor.size() <= 150
+        && data.assignedTo is string && data.assignedTo.size() <= 150
+        && data.coordinateX is number
+        && data.coordinateY is number
+        && data.coordinateZ is number
+        && data.discipline1 is string && data.discipline1.size() <= 100
+        && data.discipline2 is string && data.discipline2.size() <= 100
+        && data.comment is string && data.comment.size() <= 2000
+        && data.synced is bool
+        && (!data.keys().hasAll(['syncedClashId']) || (data.syncedClashId is string && data.syncedClashId.size() <= 128))
+        && (!data.keys().hasAll(['updatedAt']) || data.updatedAt is timestamp)
+        && data.createdAt is timestamp;
+    }
+
+    // Helper to check if user is owner of the project
+    function isProjectOwner(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+    }
+    
+    match /projects/{projectId} {
+      allow read: if isSignedIn() || projectId == 'demo_olympic_complex';
+      
+      allow create: if isSignedIn()
+        && isValidId(projectId)
+        && isValidProject(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+        
+      allow update: if isSignedIn()
+        && isValidId(projectId)
+        && existing().ownerId == request.auth.uid
+        && isValidProject(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().ownerId == request.auth.uid;
+        
+      allow delete: if isSignedIn()
+        && existing().ownerId == request.auth.uid;
+
+      // Clashes Subcollection
+      match /clashes/{clashId} {
+        allow read: if isSignedIn();
+        
+        allow create: if isSignedIn()
+          && isValidId(clashId)
+          && isProjectOwner(projectId)
+          && isValidClash(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+          
+        allow update: if isSignedIn()
+          && isValidId(clashId)
+          && isProjectOwner(projectId)
+          && isValidClash(incoming())
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time;
+          
+        allow delete: if isSignedIn()
+          && isProjectOwner(projectId);
+      }
+
+      // BOQItems Subcollection
+      match /boqItems/{boqItemId} {
+        allow read: if isSignedIn();
+        
+        allow create: if isSignedIn()
+          && isValidId(boqItemId)
+          && isProjectOwner(projectId)
+          && isValidBOQItem(incoming())
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+          
+        allow update: if isSignedIn()
+          && isValidId(boqItemId)
+          && isProjectOwner(projectId)
+          && isValidBOQItem(incoming())
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time;
+          
+        allow delete: if isSignedIn()
+          && isProjectOwner(projectId);
+      }
+
+      // BCFIssues Subcollection
+      match /bcfIssues/{issueId} {
+        allow read: if isSignedIn();
+        
+        allow create: if isSignedIn()
+          && isValidId(issueId)
+          && isProjectOwner(projectId)
+          && isValidBCFIssue(incoming())
+          && incoming().createdAt == request.time;
+          
+        allow update: if isSignedIn()
+          && isValidId(issueId)
+          && isProjectOwner(projectId)
+          && isValidBCFIssue(incoming())
+          && incoming().createdAt == existing().createdAt;
+          
+        allow delete: if isSignedIn()
+          && isProjectOwner(projectId);
+      }
+
+      // Annotations Subcollection
+      match /annotations/{annotationId} {
+        allow read: if isSignedIn() || projectId == 'demo_olympic_complex';
+        
+        allow create: if (isSignedIn() || projectId == 'demo_olympic_complex')
+          && isValidId(annotationId)
+          && isValidAnnotation(incoming())
+          && incoming().createdAt == request.time;
+          
+        allow update: if (isSignedIn() || projectId == 'demo_olympic_complex')
+          && isValidId(annotationId)
+          && isValidAnnotation(incoming())
+          && incoming().createdAt == existing().createdAt;
+          
+        allow delete: if isSignedIn() || projectId == 'demo_olympic_complex';
+      }
+
+      // Presence Subcollection
+      match /presence/{presenceId} {
+        allow read: if isSignedIn() || projectId == 'demo_olympic_complex';
+        
+        allow create: if (isSignedIn() || projectId == 'demo_olympic_complex')
+          && isValidId(presenceId)
+          && isValidUserPresence(incoming())
+          && incoming().updatedAt == request.time;
+          
+        allow update: if (isSignedIn() || projectId == 'demo_olympic_complex')
+          && isValidId(presenceId)
+          && isValidUserPresence(incoming())
+          && incoming().updatedAt == request.time;
+          
+        allow delete: if isSignedIn() || projectId == 'demo_olympic_complex';
+      }
+    }
+  }
+}
