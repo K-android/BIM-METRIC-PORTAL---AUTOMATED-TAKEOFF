@@ -68,6 +68,7 @@ export default function App() {
   // Authentication status
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<{ code: string; message: string } | null>(null);
 
   // 🛡️ Global Resiliency & Pipeline Control States
   const [globalPipeline, setGlobalPipeline] = useState<'healthy' | 'latency' | 'offline' | 'corrupted'>('healthy');
@@ -577,10 +578,20 @@ export default function App() {
 
   // Google Login handling
   const handleLogin = async () => {
+    setAuthError(null);
     try {
       await signInWithGoogle();
-    } catch (err) {
-      console.error("Authentication popup aborted.", err);
+      setAuthError(null);
+      showGlobalToast("Authorized successfully via Google Auth!", "success");
+    } catch (err: any) {
+      console.error("Authentication popup aborted:", err);
+      const errCode = err?.code || 'auth/popup-closed-by-user';
+      const errMsg = err?.message || 'The Google auth popup window was closed or blocked.';
+      setAuthError({
+        code: errCode,
+        message: errMsg
+      });
+      showGlobalToast("Login blocked or cancelled. See help banner.", "error");
     }
   };
 
@@ -1186,7 +1197,51 @@ export default function App() {
       </header>
 
       {/* 🚧 CLOUD CONNECTING AND DEMO NOTIFICATION HEAD BANNERS */}
-      {!currentUser && !isAuthLoading && (
+      {authError && (
+        <div key="auth-error-banner" className="bg-red-50 border-b border-red-200 py-3 px-4 animate-in slide-in-from-top duration-300">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-[11px] text-red-950 relative">
+            <div className="flex items-start gap-2.5">
+              <div className="bg-red-100 p-1.5 rounded-full text-red-650 mt-0.5 flex-shrink-0">
+                <ShieldAlert className="w-4 h-4 animate-pulse text-red-600" />
+              </div>
+              <div className="flex-1">
+                <span className="font-extrabold uppercase tracking-widest text-red-700 block mb-0.5">
+                  Sign-In Intercepted ({authError.code})
+                </span>
+                <p className="text-red-900 leading-relaxed font-semibold">
+                  Google login window failed to complete. When opened inside a cross-origin preview frame (like AI Studio's side pane), browsers often block authentication popups or restrict third-party database credentials.
+                </p>
+                <div className="mt-2 flex flex-col gap-1 md:flex-row md:items-center md:gap-4 text-[9.5px]">
+                  <span className="bg-white border border-red-100 px-2 py-0.5 rounded text-red-800 font-bold flex items-center gap-1 shadow-xs">
+                    💡 Solution 1: Click the "Open in New Tab" icon at the top-right corner of AI Studio and sign in there!
+                  </span>
+                  <span className="bg-white border border-red-100 px-2 py-0.5 rounded text-red-800 font-bold flex items-center gap-1 shadow-xs">
+                    💡 Solution 2: Enable popups/cookies in your browser settings.
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end md:self-center flex-shrink-0 mt-2 md:mt-0">
+              <button
+                id="btn-login-error-retry"
+                onClick={handleLogin}
+                className="text-[9px] bg-red-600 hover:bg-red-700 text-white border border-red-650 rounded font-black uppercase tracking-wider px-2.5 py-1.5 transition cursor-pointer"
+              >
+                Retry Sign-In
+              </button>
+              <button
+                id="btn-login-error-dismiss"
+                onClick={() => setAuthError(null)}
+                className="text-[9px] bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded font-bold uppercase tracking-wider px-2 py-1.5 transition cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!currentUser && !isAuthLoading && !authError && (
         <div className="bg-amber-50 border-b border-amber-200 py-1.5 px-4 animate-in fade-in">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-amber-900">
             <span className="flex items-center gap-1.5">
